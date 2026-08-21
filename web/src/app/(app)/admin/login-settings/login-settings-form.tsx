@@ -60,6 +60,8 @@ type InitialSettings = {
   sideBullet1: string;
   sideBullet2: string;
   sideBullet3: string;
+  welcomeTitle: string;
+  welcomeSubtitle: string;
   footerText: string;
 };
 
@@ -95,6 +97,8 @@ export function LoginSettingsForm({ initial }: { initial: InitialSettings }) {
         sideBullet1: form.sideBullet1,
         sideBullet2: form.sideBullet2,
         sideBullet3: form.sideBullet3,
+        welcomeTitle: form.welcomeTitle,
+        welcomeSubtitle: form.welcomeSubtitle,
         footerText: form.footerText,
       });
       if (!res.ok) setError(res.error);
@@ -240,6 +244,34 @@ export function LoginSettingsForm({ initial }: { initial: InitialSettings }) {
             <div>
               <label className={labelCls}>Bullet 3</label>
               <input maxLength={160} value={form.sideBullet3} onChange={(e) => update("sideBullet3", e.target.value)} className={inputCls} />
+            </div>
+          </div>
+
+          <hr className="border-slate-100" />
+
+          <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Sambutan Form Login</div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelCls}>Judul Sambutan *</label>
+              <input
+                required
+                maxLength={120}
+                placeholder="Selamat datang"
+                value={form.welcomeTitle}
+                onChange={(e) => update("welcomeTitle", e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Subjudul Sambutan</label>
+              <input
+                maxLength={180}
+                placeholder="Masuk untuk mengakses dashboard pemantauan mutu."
+                value={form.welcomeSubtitle}
+                onChange={(e) => update("welcomeSubtitle", e.target.value)}
+                className={inputCls}
+              />
             </div>
           </div>
 

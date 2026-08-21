@@ -208,6 +208,9 @@ model SiteSetting {
   sideBullet1       String   @default("Indikator INM & IMP lintas unit")
   sideBullet2       String   @default("Dashboard real-time & analisa PDSA")
   sideBullet3       String   @default("Workflow approval Komite Mutu")
+  // Sambutan di atas form login
+  welcomeTitle      String   @default("Selamat datang") @db.VarChar(120)
+  welcomeSubtitle   String   @default("Masuk untuk mengakses dashboard pemantauan mutu.") @db.VarChar(180)
   // Footer
   footerText        String   @default("© Tim Mutu RS Royal Prima Jambi")
   updatedAt         DateTime @updatedAt

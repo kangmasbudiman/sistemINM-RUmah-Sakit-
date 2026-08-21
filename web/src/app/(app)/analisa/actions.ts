@@ -63,6 +63,22 @@ export async function submitAnalysis(
     return { ok: false, error: "Sudah dalam antrean validasi/approval" };
   }
 
+  const missing: string[] = [];
+  if (!analysis.analisaText?.trim()) missing.push("Analisa");
+  if (!analysis.pdsaPlan?.trim()) missing.push("PDSA Plan");
+  if (!analysis.pdsaDo?.trim()) missing.push("PDSA Do");
+  if (!analysis.pdsaStudy?.trim()) missing.push("PDSA Study");
+  if (!analysis.pdsaAct?.trim()) missing.push("PDSA Act");
+  if (!analysis.dataCollector?.trim()) missing.push("Data Collector");
+  if (!analysis.picName?.trim()) missing.push("Nama PIC");
+  if (!analysis.picNik?.trim()) missing.push("NIK PIC");
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      error: `Analisa belum lengkap. Lengkapi di halaman Input: ${missing.join(", ")}`,
+    };
+  }
+
   try {
     await prisma.analysis.update({
       where: { id: analysis.id },

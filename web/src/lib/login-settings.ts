@@ -14,6 +14,8 @@ export type LoginSettings = Pick<
   | "sideBullet1"
   | "sideBullet2"
   | "sideBullet3"
+  | "welcomeTitle"
+  | "welcomeSubtitle"
   | "footerText"
 >;
 
@@ -29,6 +31,8 @@ const DEFAULTS: Omit<LoginSettings, "id"> = {
   sideBullet1: "Indikator INM & IMP lintas unit",
   sideBullet2: "Dashboard real-time & analisa PDSA",
   sideBullet3: "Workflow approval Komite Mutu",
+  welcomeTitle: "Selamat datang",
+  welcomeSubtitle: "Masuk untuk mengakses dashboard pemantauan mutu.",
   footerText: "© Tim Mutu RS Royal Prima Jambi",
 };
 
@@ -38,7 +42,11 @@ export async function getLoginSettings(): Promise<LoginSettings> {
   if (!row) {
     return { id: "singleton", ...DEFAULTS };
   }
-  return { ...row };
+  return {
+    ...row,
+    welcomeTitle: row.welcomeTitle || DEFAULTS.welcomeTitle,
+    welcomeSubtitle: row.welcomeSubtitle || DEFAULTS.welcomeSubtitle,
+  };
 }
 
 /** Sediakan daftar ikon Lucide yang bisa dipilih admin. */

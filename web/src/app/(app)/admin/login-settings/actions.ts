@@ -16,6 +16,8 @@ const loginSettingsSchema = z.object({
   sideBullet1: z.string().max(160).or(z.literal("")),
   sideBullet2: z.string().max(160).or(z.literal("")),
   sideBullet3: z.string().max(160).or(z.literal("")),
+  welcomeTitle: z.string().min(1).max(120),
+  welcomeSubtitle: z.string().max(180).or(z.literal("")),
   footerText: z.string().max(160).or(z.literal("")),
 });
 
@@ -55,6 +57,8 @@ export async function saveLoginSettings(
         sideBullet1: data.sideBullet1,
         sideBullet2: data.sideBullet2,
         sideBullet3: data.sideBullet3,
+        welcomeTitle: data.welcomeTitle,
+        welcomeSubtitle: data.welcomeSubtitle,
         footerText: data.footerText,
       },
       create: {
@@ -69,6 +73,8 @@ export async function saveLoginSettings(
         sideBullet1: data.sideBullet1,
         sideBullet2: data.sideBullet2,
         sideBullet3: data.sideBullet3,
+        welcomeTitle: data.welcomeTitle,
+        welcomeSubtitle: data.welcomeSubtitle,
         footerText: data.footerText,
       },
     });

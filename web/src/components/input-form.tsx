@@ -242,7 +242,7 @@ export function InputForm({
     (f) => !analysisDraft[f.key].trim()
   );
   const analysisComplete = missingFields.length === 0;
-  const canSave = analysisComplete && !isLocked && !pending;
+  const canSave = !isLocked && !pending;
 
   return (
     <div className="space-y-4">
@@ -525,9 +525,7 @@ export function InputForm({
               title={
                 isLocked
                   ? "Analisa sudah di-approve"
-                  : !analysisComplete
-                    ? `Lengkapi: ${missingFields.map((f) => f.label).join(", ")}`
-                    : "Simpan data & analisa"
+                  : "Simpan data harian & analisa (draft)"
               }
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -546,7 +544,8 @@ export function InputForm({
 
         {!analysisComplete && !isLocked && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-            ⚠ Tombol Simpan aktif setelah semua field terisi:{" "}
+            ⚠ Data harian bisa disimpan sebagai draft. Namun analisa wajib
+            lengkap sebelum submit ke Komite Mutu — belum terisi:{" "}
             <span className="font-semibold">
               {missingFields.map((f) => f.label).join(", ")}
             </span>

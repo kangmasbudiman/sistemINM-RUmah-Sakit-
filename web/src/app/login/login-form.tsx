@@ -61,6 +61,8 @@ type LoginSettings = {
   sideBullet1: string;
   sideBullet2: string;
   sideBullet3: string;
+  welcomeTitle: string;
+  welcomeSubtitle: string;
   footerText: string;
 };
 
@@ -128,8 +130,14 @@ export function LoginForm({ settings }: { settings: LoginSettings }) {
             <BrandIcon className="h-6 w-6" />
           </div>
           <div className="leading-tight">
-            <div className="text-sm font-semibold text-white/90">Sistem INM RS</div>
-            <div className="text-xs text-white/70">Royal Prima Jambi</div>
+            <div className="text-sm font-semibold text-white/90">
+              {settings.brandTitle}
+            </div>
+            {settings.brandSubtitle && (
+              <div className="text-xs text-white/70">
+                {settings.brandSubtitle}
+              </div>
+            )}
           </div>
         </div>
 
@@ -187,10 +195,14 @@ export function LoginForm({ settings }: { settings: LoginSettings }) {
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             {/* Desktop heading (hidden on mobile — branding shown above) */}
             <div className="mb-6 hidden lg:block">
-              <h2 className="text-2xl font-bold text-slate-900">Selamat datang</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Masuk untuk mengakses dashboard pemantauan mutu.
-              </p>
+              <h2 className="text-2xl font-bold text-slate-900">
+                {settings.welcomeTitle}
+              </h2>
+              {settings.welcomeSubtitle && (
+                <p className="mt-1 text-sm text-slate-500">
+                  {settings.welcomeSubtitle}
+                </p>
+              )}
             </div>
 
             {serverError && (
