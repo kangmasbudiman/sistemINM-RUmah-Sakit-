@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const year = Number(url.searchParams.get("year"));
   const month = Number(url.searchParams.get("month"));
-  const category = (url.searchParams.get("category") as "INM" | "IMP" | "IMP_RS" | "ALL") ?? "ALL";
+  const category = (url.searchParams.get("category") as "INM" | "IMP" | "IMP_RS" | "IMK" | "ALL") ?? "ALL";
   const statusFilter = url.searchParams.get("status") ?? "";
   const unitCode = url.searchParams.get("unit");
 
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
   // Document title row
   lines.push(`# Laporan Indikator Mutu RS Royal Prima Jambi`);
   lines.push(`# Periode: ${monthNames[month - 1]} ${year}`);
-  lines.push(`# Kategori: ${category === "ALL" ? "INM + IMP Unit + IMP RS" : category === "IMP_RS" ? "IMP RS" : category}`);
+  lines.push(`# Kategori: ${category === "ALL" ? "INM + IMP Unit + IMP RS + IMK" : category === "IMP_RS" ? "IMP RS" : category === "IMK" ? "IMK" : category}`);
   lines.push(
     `# Unit: ${
       unitCode

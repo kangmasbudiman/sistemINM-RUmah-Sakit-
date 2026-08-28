@@ -19,6 +19,7 @@ const CAT_BADGE: Record<string, string> = {
   INM: "bg-emerald-100 text-emerald-700",
   "IMP Unit": "bg-sky-100 text-sky-700",
   "IMP RS": "bg-indigo-100 text-indigo-700",
+  IMK: "bg-violet-100 text-violet-700",
 };
 
 export function GlobalSearch() {

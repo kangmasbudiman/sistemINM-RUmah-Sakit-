@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const CATEGORY_VALUES = ["INM", "IMP", "IMP_RS"] as const;
+const CATEGORY_VALUES = ["INM", "IMP", "IMP_RS", "IMK"] as const;
 
 export type MasterResult =
   | { ok: true }
@@ -17,6 +17,36 @@ async function assertAdmin() {
     return { error: "Hanya ADMIN yang dapat mengelola master data" as const };
   }
   return { error: null };
+}
+
+// ─── PENGATURAN INPUT ───────────────────────────────────────────────────
+export async function saveInputSettings(input: {
+  restrictEditWindow: boolean;
+}): Promise<MasterResult> {
+  const { error } = await assertAdmin();
+  if (error) return { ok: false, error };
+
+  const parsed = z
+    .object({ restrictEditWindow: z.boolean() })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Input tidak valid" };
+
+  try {
+    await prisma.siteSetting.upsert({
+      where: { id: "singleton" },
+      update: { restrictEditWindow: parsed.data.restrictEditWindow },
+      create: { id: "singleton", restrictEditWindow: parsed.data.restrictEditWindow },
+    });
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Gagal menyimpan pengaturan" };
+  }
+
+  revalidatePath("/admin/master");
+  revalidatePath("/input");
+  revalidatePath("/imp/input");
+  revalidatePath("/imp-rs/input");
+  revalidatePath("/imk/input");
+  return { ok: true };
 }
 
 // ─── UNIT ───────────────────────────────────────────────────────────────
@@ -113,6 +143,92 @@ export async function deleteUnit(id: string): Promise<MasterResult> {
   revalidatePath("/indikator");
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+export type CopyResult =
+  | { ok: true; copied: number; skipped: number }
+  | { ok: false; error: string };
+
+export async function copyUnitIndicators(input: {
+  sourceUnitId: string;
+  targetUnitId: string;
+  categories: ("INM" | "IMP" | "IMP_RS" | "IMK")[];
+}): Promise<CopyResult> {
+  const { error } = await assertAdmin();
+  if (error) return { ok: false, error };
+
+  const parsed = z
+    .object({
+      sourceUnitId: z.string().cuid(),
+      targetUnitId: z.string().cuid(),
+      categories: z.array(z.enum(CATEGORY_VALUES)).min(1),
+    })
+    .safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Input tidak valid" };
+  }
+  const { sourceUnitId, targetUnitId, categories } = parsed.data;
+
+  if (sourceUnitId === targetUnitId) {
+    return { ok: false, error: "Unit sumber dan tujuan tidak boleh sama" };
+  }
+
+  const [source, target] = await Promise.all([
+    prisma.unit.findUnique({ where: { id: sourceUnitId } }),
+    prisma.unit.findUnique({ where: { id: targetUnitId } }),
+  ]);
+  if (!source) return { ok: false, error: "Unit sumber tidak ditemukan" };
+  if (!target) return { ok: false, error: "Unit tujuan tidak ditemukan" };
+
+  const sourceIndicators = await prisma.indicator.findMany({
+    where: { unitId: sourceUnitId, category: { in: categories } },
+    orderBy: [{ category: "asc" }, { orderNo: "asc" }],
+  });
+  if (sourceIndicators.length === 0) {
+    return { ok: false, error: "Unit sumber tidak punya indikator pada kategori terpilih" };
+  }
+
+  const existing = await prisma.indicator.findMany({
+    where: { unitId: targetUnitId },
+    select: { category: true, code: true },
+  });
+  const existingKeys = new Set(existing.map((i) => `${i.category}:${i.code}`));
+
+  const toCreate = sourceIndicators.filter(
+    (i) => !existingKeys.has(`${i.category}:${i.code}`)
+  );
+
+  try {
+    await prisma.$transaction(
+      toCreate.map((i) =>
+        prisma.indicator.create({
+          data: {
+            unitId: targetUnitId,
+            category: i.category,
+            code: i.code,
+            title: i.title,
+            numeratorLabel: i.numeratorLabel,
+            denominatorLabel: i.denominatorLabel,
+            targetPct: i.targetPct,
+            orderNo: i.orderNo,
+            isActive: i.isActive,
+          },
+        })
+      )
+    );
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Gagal menyalin indikator" };
+  }
+
+  revalidatePath("/admin/master");
+  revalidatePath("/indikator");
+  revalidatePath("/dashboard");
+  revalidatePath("/imp/dashboard");
+  return {
+    ok: true,
+    copied: toCreate.length,
+    skipped: sourceIndicators.length - toCreate.length,
+  };
 }
 
 // ─── INDICATOR ──────────────────────────────────────────────────────────

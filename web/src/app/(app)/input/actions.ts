@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ALL_UNITS_ROLES } from "@/lib/auth-helpers";
 import { EDIT_WINDOW_DAYS, diffDaysFromToday, todayYmd } from "@/lib/date-window";
+import { getRestrictEditWindow } from "@/lib/app-settings";
 import { z } from "zod";
 
 const rowSchema = z.object({
@@ -62,19 +63,22 @@ export async function saveIndicatorData(
     return { ok: false, error: "Tidak punya akses ke indikator ini" };
   }
 
-  const today = todayYmd();
-  const outOfWindow: string[] = [];
-  for (const row of rows) {
-    const diff = diffDaysFromToday(row.date, today);
-    if (diff < 0 || diff >= EDIT_WINDOW_DAYS) {
-      outOfWindow.push(row.date);
+  const restrictWindow = await getRestrictEditWindow();
+  if (restrictWindow) {
+    const today = todayYmd();
+    const outOfWindow: string[] = [];
+    for (const row of rows) {
+      const diff = diffDaysFromToday(row.date, today);
+      if (diff < 0 || diff >= EDIT_WINDOW_DAYS) {
+        outOfWindow.push(row.date);
+      }
     }
-  }
-  if (outOfWindow.length > 0) {
-    return {
-      ok: false,
-      error: `Tanggal di luar jendela ${EDIT_WINDOW_DAYS} hari: ${outOfWindow.join(", ")}`,
-    };
+    if (outOfWindow.length > 0) {
+      return {
+        ok: false,
+        error: `Tanggal di luar jendela ${EDIT_WINDOW_DAYS} hari: ${outOfWindow.join(", ")}`,
+      };
+    }
   }
 
   try {

@@ -6,9 +6,13 @@ import {
   Plus,
   Pencil,
   Trash2,
+  Copy,
   X,
   Building2,
   ListChecks,
+  CalendarClock,
+  Check,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -18,6 +22,8 @@ import {
   createIndicator,
   updateIndicator,
   deleteIndicator,
+  saveInputSettings,
+  copyUnitIndicators,
 } from "./actions";
 
 type UnitRow = {
@@ -35,7 +41,7 @@ type IndicatorRow = {
   unitId: string;
   unitCode: string;
   unitName: string;
-  category: "INM" | "IMP" | "IMP_RS";
+  category: "INM" | "IMP" | "IMP_RS" | "IMK";
   code: string;
   title: string;
   numeratorLabel: string;
@@ -47,16 +53,18 @@ type IndicatorRow = {
   analysisCount: number;
 };
 
-type Category = "INM" | "IMP" | "IMP_RS";
+type Category = "INM" | "IMP" | "IMP_RS" | "IMK";
 
 type Tab = "indicators" | "units";
 
 export function MasterManager({
   units,
   indicators,
+  restrictEditWindow: initialRestrict,
 }: {
   units: UnitRow[];
   indicators: IndicatorRow[];
+  restrictEditWindow: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("indicators");
 
@@ -68,6 +76,8 @@ export function MasterManager({
           Kelola daftar Unit dan Indikator Mutu Nasional.
         </p>
       </div>
+
+      <InputWindowSetting initial={initialRestrict} />
 
       <div className="flex gap-1 rounded-lg border border-slate-200 bg-white p-1">
         <TabBtn active={tab === "indicators"} onClick={() => setTab("indicators")} icon={ListChecks} label={`Indikator (${indicators.length})`} />
@@ -121,6 +131,7 @@ function UnitsPanel({ units }: { units: UnitRow[] }) {
   const [form, setForm] = useState<UnitForm | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [copyTarget, setCopyTarget] = useState<UnitRow | null>(null);
 
   function openCreate() {
     setError(null);
@@ -216,6 +227,13 @@ function UnitsPanel({ units }: { units: UnitRow[] }) {
                     <button onClick={() => openEdit(u)} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-emerald-600" title="Edit">
                       <Pencil className="h-4 w-4" />
                     </button>
+                    <button
+                      onClick={() => { setError(null); setCopyTarget(u); }}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-violet-600"
+                      title="Salin indikator dari unit lain"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
                     <button onClick={() => remove(u)} className="rounded-md p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600" title="Hapus">
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -226,6 +244,14 @@ function UnitsPanel({ units }: { units: UnitRow[] }) {
           </tbody>
         </table>
       </div>
+
+      {copyTarget && (
+        <CopyIndicatorsModal
+          target={copyTarget}
+          units={units.filter((u) => u.id !== copyTarget.id && u.indicatorCount > 0)}
+          onClose={() => setCopyTarget(null)}
+        />
+      )}
 
       {form && (
         <Modal title={form.id ? "Edit Unit" : "Tambah Unit"} onClose={() => setForm(null)}>
@@ -285,6 +311,134 @@ function UnitsPanel({ units }: { units: UnitRow[] }) {
         </Modal>
       )}
     </>
+  );
+}
+
+const ALL_CATEGORIES: { value: Category; label: string }[] = [
+  { value: "INM", label: "INM" },
+  { value: "IMP", label: "IMP Unit" },
+  { value: "IMP_RS", label: "IMP RS" },
+  { value: "IMK", label: "IMK" },
+];
+
+function CopyIndicatorsModal({
+  target,
+  units,
+  onClose,
+}: {
+  target: UnitRow;
+  units: UnitRow[];
+  onClose: () => void;
+}) {
+  const [sourceId, setSourceId] = useState(units[0]?.id ?? "");
+  const [cats, setCats] = useState<Category[]>(["INM", "IMP", "IMP_RS", "IMK"]);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function toggleCat(c: Category) {
+    setCats((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setDone(null);
+    if (!sourceId) {
+      setError("Pilih unit sumber");
+      return;
+    }
+    if (cats.length === 0) {
+      setError("Pilih minimal satu kategori");
+      return;
+    }
+    startTransition(async () => {
+      const res = await copyUnitIndicators({
+        sourceUnitId: sourceId,
+        targetUnitId: target.id,
+        categories: cats,
+      });
+      if (!res.ok) setError(res.error);
+      else {
+        setDone(
+          res.copied > 0
+            ? `${res.copied} indikator disalin ke ${target.code}${res.skipped > 0 ? `, ${res.skipped} dilewati (kode sudah ada)` : ""}`
+            : "Tidak ada yang disalin — semua kode sudah ada di unit tujuan"
+        );
+      }
+    });
+  }
+
+  return (
+    <Modal title={`Salin Indikator ke ${target.code}`} onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4 p-5">
+        {units.length === 0 ? (
+          <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Tidak ada unit lain yang punya indikator untuk disalin.
+          </p>
+        ) : (
+          <>
+            <Field label="Unit Sumber *">
+              <select
+                value={sourceId}
+                onChange={(e) => setSourceId(e.target.value)}
+                className={inputCls}
+              >
+                {units.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code} — {u.name} ({u.indicatorCount} indikator)
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Kategori yang Disalin *">
+              <div className="flex flex-wrap gap-3">
+                {ALL_CATEGORIES.map((c) => (
+                  <label key={c.value} className="inline-flex items-center gap-1.5 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={cats.includes(c.value)}
+                      onChange={() => toggleCat(c.value)}
+                      className="h-4 w-4 rounded border-slate-300 accent-emerald-600"
+                    />
+                    {c.label}
+                  </label>
+                ))}
+              </div>
+            </Field>
+
+            <p className="text-xs leading-relaxed text-slate-500">
+              Indikator dengan kode yang sudah ada di {target.code} akan dilewati. Data
+              observasi/analisa tidak ikut disalin — hanya definisi indikatornya.
+            </p>
+          </>
+        )}
+
+        {error && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            ⚠ {error}
+          </div>
+        )}
+        {done && (
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+            ✓ {done}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-1">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200">
+            Tutup
+          </button>
+          {units.length > 0 && (
+            <button type="submit" disabled={pending} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">
+              {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Salin
+            </button>
+          )}
+        </div>
+      </form>
+    </Modal>
   );
 }
 
@@ -395,6 +549,7 @@ function IndicatorsPanel({
             <option value="INM">INM ({indicators.filter((i) => i.category === "INM").length})</option>
             <option value="IMP">IMP Unit ({indicators.filter((i) => i.category === "IMP").length})</option>
             <option value="IMP_RS">IMP RS ({indicators.filter((i) => i.category === "IMP_RS").length})</option>
+            <option value="IMK">IMK ({indicators.filter((i) => i.category === "IMK").length})</option>
           </select>
           <select
             value={filterUnit}
@@ -467,6 +622,8 @@ function IndicatorsPanel({
                       ? "bg-emerald-100 text-emerald-700"
                       : i.category === "IMP"
                       ? "bg-sky-100 text-sky-700"
+                      : i.category === "IMK"
+                      ? "bg-violet-100 text-violet-700"
                       : "bg-indigo-100 text-indigo-700"
                   )}>
                     {i.category === "IMP_RS" ? "IMP RS" : i.category}
@@ -527,6 +684,7 @@ function IndicatorsPanel({
                   <option value="INM">INM</option>
                   <option value="IMP">IMP Unit</option>
                   <option value="IMP_RS">IMP RS</option>
+                  <option value="IMK">IMK (Mutu Kontrak)</option>
                 </select>
               </Field>
               <Field label="Urutan">
@@ -623,6 +781,88 @@ function IndicatorsPanel({
         </Modal>
       )}
     </>
+  );
+}
+
+// ─── PENGATURAN INPUT ───────────────────────────────────────────────────
+function InputWindowSetting({ initial }: { initial: boolean }) {
+  const [enabled, setEnabled] = useState(initial);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function save(next: boolean) {
+    setEnabled(next);
+    setMsg(null);
+    startTransition(async () => {
+      const res = await saveInputSettings({ restrictEditWindow: next });
+      if (res.ok) {
+        setMsg({ ok: true, text: next ? "Pembatas 7 hari diaktifkan" : "Mode bebas aktif — semua tanggal dapat diisi" });
+      } else {
+        setEnabled(!next);
+        setMsg({ ok: false, text: res.error });
+      }
+    });
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 rounded-lg bg-violet-100 p-2 text-violet-600">
+            <CalendarClock className="h-5 w-5" />
+          </span>
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">Pembatas Input 7 Hari</h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+              Aktif: hanya 7 hari terakhir yang bisa diisi (tanggal lain terkunci).
+              Nonaktif: semua tanggal pada bulan berjalan bisa diisi bebas.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          disabled={pending}
+          onClick={() => save(!enabled)}
+          className={cn(
+            "relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-60",
+            enabled ? "bg-emerald-600" : "bg-slate-300"
+          )}
+        >
+          <span
+            className={cn(
+              "inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform",
+              enabled ? "translate-x-6" : "translate-x-1"
+            )}
+          />
+        </button>
+      </div>
+
+      {pending && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Menyimpan…
+        </p>
+      )}
+      {msg && !pending && (
+        <p
+          className={cn(
+            "mt-3 flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium",
+            msg.ok
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-red-50 text-red-700"
+          )}
+        >
+          {msg.ok ? (
+            <Check className="h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+          )}
+          {msg.text}
+        </p>
+      )}
+    </div>
   );
 }
 

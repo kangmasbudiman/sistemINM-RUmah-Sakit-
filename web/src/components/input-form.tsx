@@ -79,6 +79,7 @@ export function InputForm({
   year,
   month,
   today,
+  restrictWindow = true,
   currentUserName,
   currentUserNik,
   inputBasePath = "/input",
@@ -88,6 +89,7 @@ export function InputForm({
   year: number;
   month: number;
   today: string;
+  restrictWindow?: boolean;
   currentUserName?: string | null;
   currentUserNik?: string | null;
   inputBasePath?: string;
@@ -225,6 +227,7 @@ export function InputForm({
   const isRejected = current.analysis?.status === "REJECTED";
 
   function dayEditable(day: number): boolean {
+    if (!restrictWindow) return true;
     return isDayEditable(year, month, day, today);
   }
 
@@ -286,8 +289,17 @@ export function InputForm({
           </div>
         )}
         <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          ℹ Hanya {EDIT_WINDOW_DAYS} hari terakhir (termasuk hari ini) yang dapat
-          diisi. Hari di luarnya bersifat read-only.
+          {restrictWindow ? (
+            <>
+              ℹ Hanya {EDIT_WINDOW_DAYS} hari terakhir (termasuk hari ini) yang
+              dapat diisi. Hari di luarnya bersifat read-only.
+            </>
+          ) : (
+            <>
+              ℹ Mode bebas: semua tanggal bulan ini dapat diisi (pembatas 7 hari
+              dinonaktifkan oleh admin).
+            </>
+          )}
         </div>
         {isRejected && current.analysis?.rejectionNote && (
           <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">

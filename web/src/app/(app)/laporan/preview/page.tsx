@@ -31,7 +31,7 @@ export default async function LaporanPreview({
   const now = new Date();
   const year = sp.year ? Number(sp.year) : now.getFullYear();
   const month = sp.month ? Number(sp.month) : now.getMonth() + 1;
-  const category = (sp.category as "INM" | "IMP" | "IMP_RS" | "ALL") ?? "ALL";
+  const category = (sp.category as "INM" | "IMP" | "IMP_RS" | "IMK" | "ALL") ?? "ALL";
   const statusFilter = (sp.status as string) ?? "";
 
   const units = await prisma.unit.findMany({ orderBy: { orderNo: "asc" } });
@@ -150,7 +150,14 @@ export default async function LaporanPreview({
   const unitFilterLabel = sp.unit
     ? units.find((u) => u.code === sp.unit)?.name ?? "Semua Unit"
     : "Semua Unit";
-  const categoryLabel = category === "ALL" ? "INM + IMP Unit + IMP RS" : category === "IMP_RS" ? "IMP RS" : category;
+  const categoryLabel =
+    category === "ALL"
+      ? "INM + IMP Unit + IMP RS + IMK"
+      : category === "IMP_RS"
+      ? "IMP RS"
+      : category === "IMK"
+      ? "IMK (Mutu Kontrak)"
+      : category;
 
   return (
     <div className="min-h-screen bg-slate-100 print:bg-white">

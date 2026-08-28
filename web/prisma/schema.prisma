@@ -29,6 +29,7 @@ enum IndicatorCategory {
   INM
   IMP
   IMP_RS
+  IMK
 }
 
 model User {
@@ -213,5 +214,7 @@ model SiteSetting {
   welcomeSubtitle   String   @default("Masuk untuk mengakses dashboard pemantauan mutu.") @db.VarChar(180)
   // Footer
   footerText        String   @default("© Tim Mutu RS Royal Prima Jambi")
+  // Fitur input: batasi pengisian hanya N hari terakhir (true) atau semua tanggal (false)
+  restrictEditWindow Boolean  @default(true)
   updatedAt         DateTime @updatedAt
 }

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ALL_UNITS_ROLES } from "@/lib/auth-helpers";
 import { todayYmd } from "@/lib/date-window";
+import { getRestrictEditWindow } from "@/lib/app-settings";
 import { CATEGORY_LABEL } from "@/lib/utils";
 import { InputForm } from "@/components/input-form";
 import Link from "next/link";
@@ -28,6 +29,7 @@ export async function InputPage({
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const today = todayYmd();
+  const restrictWindow = await getRestrictEditWindow();
 
   const me = await prisma.user.findUnique({
     where: { id: user.id },
@@ -162,6 +164,7 @@ export async function InputPage({
         year={year}
         month={month}
         today={today}
+        restrictWindow={restrictWindow}
         currentUserName={me?.name ?? user.name}
         currentUserNik={me?.nik ?? null}
         inputBasePath={inputBasePath}

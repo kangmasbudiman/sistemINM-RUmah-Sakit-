@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getRestrictEditWindow } from "@/lib/app-settings";
 import { MasterManager } from "./master-manager";
 
 export default async function MasterAdminPage() {
@@ -8,7 +9,7 @@ export default async function MasterAdminPage() {
   if (!session?.user) redirect("/login");
   if (session.user.role !== "ADMIN") redirect("/dashboard");
 
-  const [units, indicators] = await Promise.all([
+  const [units, indicators, restrictEditWindow] = await Promise.all([
     prisma.unit.findMany({
       orderBy: { orderNo: "asc" },
       include: { _count: { select: { indicators: true, users: true } } },
@@ -20,6 +21,7 @@ export default async function MasterAdminPage() {
         _count: { select: { observations: true, analyses: true } },
       },
     }),
+    getRestrictEditWindow(),
   ]);
 
   const safeUnits = units.map((u) => ({
@@ -49,5 +51,11 @@ export default async function MasterAdminPage() {
     analysisCount: i._count.analyses,
   }));
 
-  return <MasterManager units={safeUnits} indicators={safeIndicators} />;
+  return (
+    <MasterManager
+      units={safeUnits}
+      indicators={safeIndicators}
+      restrictEditWindow={restrictEditWindow}
+    />
+  );
 }

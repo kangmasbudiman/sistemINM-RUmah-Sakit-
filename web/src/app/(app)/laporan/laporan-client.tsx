@@ -21,7 +21,7 @@ export type LaporanRow = {
   indicatorId: string;
   indicatorCode: string;
   indicatorTitle: string;
-  category: "INM" | "IMP" | "IMP_RS";
+  category: "INM" | "IMP" | "IMP_RS" | "IMK";
   unitCode: string;
   unitName: string;
   numerator: number;
@@ -48,7 +48,7 @@ type Props = {
   units: { code: string; name: string }[];
   year: number;
   month: number;
-  category: "INM" | "IMP" | "IMP_RS" | "ALL";
+  category: "INM" | "IMP" | "IMP_RS" | "IMK" | "ALL";
   statusFilter: string;
   selectedUnitCode?: string;
   isAllUnits: boolean;
@@ -243,10 +243,11 @@ export function LaporanClient({
               onChange={(e) => updateParam("category", e.target.value)}
               className={inputCls}
             >
-              <option value="ALL">Semua (INM + IMP Unit + IMP RS)</option>
+              <option value="ALL">Semua (INM + IMP Unit + IMP RS + IMK)</option>
               <option value="INM">INM</option>
               <option value="IMP">IMP Unit</option>
               <option value="IMP_RS">IMP RS</option>
+              <option value="IMK">IMK (Mutu Kontrak)</option>
             </select>
           </div>
           {isAllUnits ? (
@@ -365,6 +366,8 @@ export function LaporanClient({
                             ? "bg-emerald-50 text-emerald-700"
                             : r.category === "IMP"
                             ? "bg-sky-50 text-sky-700"
+                            : r.category === "IMK"
+                            ? "bg-violet-50 text-violet-700"
                             : "bg-indigo-50 text-indigo-700"
                         )}>
                           {r.category === "IMP_RS" ? "IMP RS" : r.category}

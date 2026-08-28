@@ -58,6 +58,22 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
     title: "Analisa Bulanan IMP RS",
     subtitle: "Workflow submit & approval analisa",
   },
+  "/imk/dashboard": {
+    title: "Dashboard IMK",
+    subtitle: "Pantau pencapaian indikator mutu kontrak",
+  },
+  "/imk/indikator": {
+    title: "Daftar Indikator IMK",
+    subtitle: "Indikator Mutu Kontrak per unit",
+  },
+  "/imk/input": {
+    title: "Input Harian IMK",
+    subtitle: "Pencatatan observasi harian + analisa PDSA",
+  },
+  "/imk/analisa": {
+    title: "Analisa Bulanan IMK",
+    subtitle: "Workflow submit & approval analisa",
+  },
   "/admin/dashboard": {
     title: "Dashboard Utama",
     subtitle: "Pantau seluruh indikator INM + IMP lintas unit",

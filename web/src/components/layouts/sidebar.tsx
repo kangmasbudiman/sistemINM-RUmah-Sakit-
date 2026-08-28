@@ -10,6 +10,7 @@ import {
   LineChart,
   Building2,
   Hospital,
+  FileSignature,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -80,6 +81,16 @@ function buildNav(role: string): NavSection[] {
           { title: "Indikator", href: "/imp-rs/indikator" },
           { title: "Input Harian", href: "/imp-rs/input" },
           { title: "Analisa Bulanan", href: "/imp-rs/analisa" },
+        ],
+      },
+      {
+        title: "IMK",
+        icon: FileSignature,
+        children: [
+          { title: "Dashboard", href: "/imk/dashboard" },
+          { title: "Indikator", href: "/imk/indikator" },
+          { title: "Input Harian", href: "/imk/input" },
+          { title: "Analisa Bulanan", href: "/imk/analisa" },
         ],
       },
     ],

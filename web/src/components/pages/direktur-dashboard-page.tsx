@@ -119,6 +119,7 @@ export async function DirekturDashboardPage() {
   const inmStats = byCategory("INM");
   const impStats = byCategory("IMP");
   const impRsStats = byCategory("IMP_RS");
+  const imkStats = byCategory("IMK");
 
   const globalPct =
     totalIndicators === 0
@@ -207,7 +208,7 @@ export async function DirekturDashboardPage() {
         <StatCard
           label="Total Indikator"
           value={totalIndicators.toString()}
-          subtitle={`INM ${inmStats.total} · IMP Unit ${impStats.total} · IMP RS ${impRsStats.total}`}
+          subtitle={`INM ${inmStats.total} · IMP Unit ${impStats.total} · IMP RS ${impRsStats.total} · IMK ${imkStats.total}`}
           icon={ListChecks}
           tone="emerald"
         />
@@ -329,30 +330,37 @@ export async function DirekturDashboardPage() {
           </div>
 
           {/* Category breakdown */}
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {([
               { stats: inmStats, color: "emerald" as const },
               { stats: impStats, color: "sky" as const },
               { stats: impRsStats, color: "indigo" as const },
+              { stats: imkStats, color: "violet" as const },
             ]).map(({ stats, color }) => {
               const tone =
                 color === "emerald"
                   ? "from-emerald-50 to-teal-50 border-emerald-200"
                   : color === "sky"
                   ? "from-sky-50 to-blue-50 border-sky-200"
-                  : "from-indigo-50 to-violet-50 border-indigo-200";
+                  : color === "indigo"
+                  ? "from-indigo-50 to-violet-50 border-indigo-200"
+                  : "from-violet-50 to-purple-50 border-violet-200";
               const titleColor =
                 color === "emerald"
                   ? "text-emerald-700"
                   : color === "sky"
                   ? "text-sky-700"
-                  : "text-indigo-700";
+                  : color === "indigo"
+                  ? "text-indigo-700"
+                  : "text-violet-700";
               const badge =
                 color === "emerald"
                   ? "bg-emerald-100 text-emerald-700"
                   : color === "sky"
                   ? "bg-sky-100 text-sky-700"
-                  : "bg-indigo-100 text-indigo-700";
+                  : color === "indigo"
+                  ? "bg-indigo-100 text-indigo-700"
+                  : "bg-violet-100 text-violet-700";
               return (
                 <div
                   key={stats.category}
@@ -433,6 +441,8 @@ export async function DirekturDashboardPage() {
                                 ? "bg-sky-100 text-sky-700"
                                 : p.category === "IMP_RS"
                                 ? "bg-indigo-100 text-indigo-700"
+                                : p.category === "IMK"
+                                ? "bg-violet-100 text-violet-700"
                                 : "bg-emerald-100 text-emerald-700"
                             }`}
                           >
@@ -495,6 +505,8 @@ export async function DirekturDashboardPage() {
                                 ? "bg-sky-100 text-sky-700"
                                 : p.category === "IMP_RS"
                                 ? "bg-indigo-100 text-indigo-700"
+                                : p.category === "IMK"
+                                ? "bg-violet-100 text-violet-700"
                                 : "bg-emerald-100 text-emerald-700"
                             }`}
                           >
