@@ -65,10 +65,20 @@ export async function saveIndicatorData(
 
   const restrictWindow = await getRestrictEditWindow();
   if (restrictWindow) {
-    const today = todayYmd();
+    // Periode selain bulan berjalan bersifat view-only (bulan lampau hanya untuk laporan)
+    const todayS = todayYmd();
+    const curYear = Number(todayS.slice(0, 4));
+    const curMonth = Number(todayS.slice(5, 7));
+    if (periodYear !== curYear || periodMonth !== curMonth) {
+      return {
+        ok: false,
+        error:
+          "Periode bulan sebelumnya hanya untuk dilihat (laporan). Pengisian hanya diizinkan untuk bulan berjalan.",
+      };
+    }
     const outOfWindow: string[] = [];
     for (const row of rows) {
-      const diff = diffDaysFromToday(row.date, today);
+      const diff = diffDaysFromToday(row.date, todayYmd());
       if (diff < 0 || diff >= EDIT_WINDOW_DAYS) {
         outOfWindow.push(row.date);
       }

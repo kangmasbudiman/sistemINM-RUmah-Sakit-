@@ -18,7 +18,11 @@ export async function InputPage({
   category: IndicatorCategory;
   inputBasePath: string;
   dashboardBasePath: string;
-  searchParams: Promise<{ indicator?: string }>;
+  searchParams: Promise<{
+    indicator?: string;
+    month?: string;
+    year?: string;
+  }>;
 }) {
   const session = await auth();
   const user = session!.user;
@@ -26,10 +30,27 @@ export async function InputPage({
   const sp = await searchParams;
 
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
   const today = todayYmd();
   const restrictWindow = await getRestrictEditWindow();
+
+  // Periode yang dilihat — default bulan berjalan; bulan lalu bersifat view-only
+  const spYear = sp.year ? Number(sp.year) : NaN;
+  const spMonth = sp.month ? Number(sp.month) : NaN;
+  const year =
+    Number.isFinite(spYear) && spYear >= 2020 && spYear <= currentYear
+      ? Math.floor(spYear)
+      : currentYear;
+  const month =
+    Number.isFinite(spMonth) && spMonth >= 1 && spMonth <= 12
+      ? Math.floor(spMonth)
+      : currentMonth;
+  const isCurrentPeriod = year === currentYear && month === currentMonth;
+  const viewOnly = !isCurrentPeriod;
+  const availableYears = [currentYear, currentYear - 1, currentYear - 2].filter(
+    (y) => y >= 2020
+  );
 
   const me = await prisma.user.findUnique({
     where: { id: user.id },
@@ -154,7 +175,8 @@ export async function InputPage({
         </h2>
         <p className="text-sm text-slate-500">
           Pilih indikator lalu isi data harian, analisa, dan PDSA untuk periode
-          bulan berjalan.
+          bulan berjalan. Bulan-bulan sebelumnya dapat dibuka melalui pilihan
+          periode untuk dilihat (read-only) sebagai bahan laporan.
         </p>
       </div>
 
@@ -165,6 +187,10 @@ export async function InputPage({
         month={month}
         today={today}
         restrictWindow={restrictWindow}
+        viewOnly={viewOnly}
+        currentYear={currentYear}
+        currentMonth={currentMonth}
+        availableYears={availableYears}
         currentUserName={me?.name ?? user.name}
         currentUserNik={me?.nik ?? null}
         inputBasePath={inputBasePath}

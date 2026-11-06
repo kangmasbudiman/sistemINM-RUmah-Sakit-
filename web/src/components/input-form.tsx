@@ -80,6 +80,10 @@ export function InputForm({
   month,
   today,
   restrictWindow = true,
+  viewOnly = false,
+  currentYear,
+  currentMonth,
+  availableYears,
   currentUserName,
   currentUserNik,
   inputBasePath = "/input",
@@ -90,6 +94,11 @@ export function InputForm({
   month: number;
   today: string;
   restrictWindow?: boolean;
+  /** Mode lihat — periode bukan bulan berjalan, semua sel read-only */
+  viewOnly?: boolean;
+  currentYear?: number;
+  currentMonth?: number;
+  availableYears?: number[];
   currentUserName?: string | null;
   currentUserNik?: string | null;
   inputBasePath?: string;
@@ -227,6 +236,7 @@ export function InputForm({
   const isRejected = current.analysis?.status === "REJECTED";
 
   function dayEditable(day: number): boolean {
+    if (viewOnly) return false;
     if (!restrictWindow) return true;
     return isDayEditable(year, month, day, today);
   }
@@ -275,11 +285,69 @@ export function InputForm({
               ))}
             </select>
           </div>
-          <div className="text-right">
-            <div className="text-xs font-medium text-slate-500">Periode</div>
-            <div className="text-sm font-semibold text-slate-900">
-              {monthLabel(month)} {year}
+          <div className="flex items-end gap-3">
+            <div>
+              <label
+                htmlFor="input-month"
+                className="block text-xs font-medium text-slate-500"
+              >
+                Bulan
+              </label>
+              <select
+                id="input-month"
+                value={month}
+                onChange={(e) =>
+                  router.push(
+                    `${inputBasePath}?indicator=${indicatorId}&year=${year}&month=${e.target.value}`
+                  )
+                }
+                className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+              >
+                {Array.from(
+                  {
+                    length:
+                      year === currentYear ? (currentMonth ?? 12) : 12,
+                  },
+                  (_, i) => i + 1
+                ).map((m) => (
+                  <option key={m} value={m}>
+                    {monthLabel(m)}
+                  </option>
+                ))}
+              </select>
             </div>
+            <div>
+              <label
+                htmlFor="input-year"
+                className="block text-xs font-medium text-slate-500"
+              >
+                Tahun
+              </label>
+              <select
+                id="input-year"
+                value={year}
+                onChange={(e) =>
+                  router.push(
+                    `${inputBasePath}?indicator=${indicatorId}&year=${e.target.value}&month=${month}`
+                  )
+                }
+                className="mt-1.5 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none"
+              >
+                {(availableYears?.length ? availableYears : [year]).map(
+                  (y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
+            {viewOnly && (
+              <div className="rounded-lg bg-sky-50 px-2 py-1.5 text-center">
+                <div className="text-[10px] text-sky-600">Mode</div>
+                <div className="text-xs font-bold text-sky-700">🔒 Lihat</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -288,19 +356,25 @@ export function InputForm({
             ✓ Analisa sudah di-approve. Hubungi Komite Mutu untuk mengubah.
           </div>
         )}
-        <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-          {restrictWindow ? (
-            <>
-              ℹ Hanya {EDIT_WINDOW_DAYS} hari terakhir (termasuk hari ini) yang
-              dapat diisi. Hari di luarnya bersifat read-only.
-            </>
-          ) : (
-            <>
-              ℹ Mode bebas: semua tanggal bulan ini dapat diisi (pembatas 7 hari
-              dinonaktifkan oleh admin).
-            </>
-          )}
-        </div>
+        {viewOnly ? (
+          <div className="mt-3 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-700">
+            🔒 Mode lihat: data mentah <b>{monthLabel(month)} {year}</b> tampil read-only untuk keperluan laporan. Pengisian hanya untuk bulan berjalan.
+          </div>
+        ) : (
+          <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            {restrictWindow ? (
+              <>
+                ℹ Hanya {EDIT_WINDOW_DAYS} hari terakhir (termasuk hari ini) yang
+                dapat diisi. Hari di luarnya bersifat read-only.
+              </>
+            ) : (
+              <>
+                ℹ Mode bebas: semua tanggal bulan ini dapat diisi (pembatas 7 hari
+                dinonaktifkan oleh admin).
+              </>
+            )}
+          </div>
+        )}
         {isRejected && current.analysis?.rejectionNote && (
           <div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
             ✗ Ditolak: {current.analysis.rejectionNote}
@@ -425,9 +499,11 @@ export function InputForm({
                       title={
                         isToday
                           ? "Hari ini"
-                          : editable
-                            ? "Dapat diisi"
-                            : "Di luar jendela 7 hari"
+                          : viewOnly
+                            ? "Mode lihat — periode lampau"
+                            : editable
+                              ? "Dapat diisi"
+                              : "Di luar jendela 7 hari"
                       }
                     >
                       {day}
@@ -526,35 +602,37 @@ export function InputForm({
             Analisa & Rencana Tindak Lanjut
           </h3>
           <div className="flex items-center gap-3">
-            {!analysisComplete && !isLocked && (
+            {!viewOnly && !analysisComplete && !isLocked && (
               <span className="hidden text-xs font-medium text-amber-600 sm:inline">
                 {missingFields.length} field belum diisi
               </span>
             )}
-            <button
-              onClick={onSave}
-              disabled={!canSave}
-              title={
-                isLocked
-                  ? "Analisa sudah di-approve"
-                  : "Simpan data harian & analisa (draft)"
-              }
-              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {pending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" /> Simpan
-                </>
-              )}
-            </button>
+            {!viewOnly && (
+              <button
+                onClick={onSave}
+                disabled={!canSave}
+                title={
+                  isLocked
+                    ? "Analisa sudah di-approve"
+                    : "Simpan data harian & analisa (draft)"
+                }
+                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" /> Menyimpan...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" /> Simpan
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
-        {!analysisComplete && !isLocked && (
+        {!viewOnly && !analysisComplete && !isLocked && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
             ⚠ Data harian bisa disimpan sebagai draft. Namun analisa wajib
             lengkap sebelum submit ke Komite Mutu — belum terisi:{" "}
@@ -570,7 +648,7 @@ export function InputForm({
             ANALISA <span className="text-red-500">*</span>
           </label>
           <textarea
-            disabled={isLocked}
+            disabled={isLocked || viewOnly}
             value={analysisDraft.analisaText}
             onChange={(e) => changeAnalysis("analisaText", e.target.value)}
             rows={3}
@@ -597,7 +675,7 @@ export function InputForm({
                     {label} <span className="text-red-500">*</span>
                   </div>
                   <textarea
-                    disabled={isLocked}
+                    disabled={isLocked || viewOnly}
                     value={analysisDraft[key]}
                     onChange={(e) => changeAnalysis(key, e.target.value)}
                     rows={3}
@@ -619,7 +697,7 @@ export function InputForm({
             <div className="text-xs font-semibold text-slate-700">
               Data Collector &amp; PIC
             </div>
-            {!isLocked && (
+            {!isLocked && !viewOnly && (
               <button
                 type="button"
                 onClick={() => setManualEdit((v) => !v)}
@@ -650,7 +728,7 @@ export function InputForm({
               <input
                 type="text"
                 readOnly={!manualEdit || isLocked}
-                disabled={isLocked}
+                disabled={isLocked || viewOnly}
                 value={analysisDraft.dataCollector}
                 onChange={(e) =>
                   changeAnalysis("dataCollector", e.target.value)
@@ -681,7 +759,7 @@ export function InputForm({
               <input
                 type="text"
                 readOnly={!manualEdit || isLocked}
-                disabled={isLocked}
+                disabled={isLocked || viewOnly}
                 value={analysisDraft.picName}
                 onChange={(e) => changeAnalysis("picName", e.target.value)}
                 tabIndex={manualEdit ? 0 : -1}
@@ -711,7 +789,7 @@ export function InputForm({
                 type="text"
                 maxLength={32}
                 readOnly={!manualEdit || isLocked}
-                disabled={isLocked}
+                disabled={isLocked || viewOnly}
                 value={analysisDraft.picNik}
                 onChange={(e) => changeAnalysis("picNik", e.target.value)}
                 tabIndex={manualEdit ? 0 : -1}
